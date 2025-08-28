@@ -1,0 +1,20 @@
+# Environment variables (contains sensitive data)
+.env
+
+# Go build artifacts
+jira-new-ticket-notifier
+*.exe
+*.log
+
+# macOS
+.DS_Store
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+config.json
