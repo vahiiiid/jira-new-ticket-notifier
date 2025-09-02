@@ -268,6 +268,22 @@ MIT License - feel free to use this in your own projects, modify it, or share it
 - Inspired by the need for better Jira workflow automation
 - Thanks to the Go community for excellent tooling
 
+## 📝 Changelog
+
+### v1.1.0 - 2025-09-02
+- **🔄 API Migration**: Updated to new Jira `/rest/api/3/search/jql` endpoint (fixes 410 deprecation error)
+- **🛡️ Improved Error Handling**: App now continues monitoring even when API errors occur
+- **📊 Better Error Messages**: Specific error descriptions for authentication, permissions, and rate limiting
+- **🔄 Enhanced Resilience**: Automatic retry on next check cycle instead of crashing
+- **✨ Stability**: More robust monitoring with graceful error recovery
+
+### v1.0.0 - 2025-08-28
+- **🎉 Initial Release**: Silent Jira ticket monitoring with macOS notifications
+- **🔧 Custom JQL Support**: Configurable filtering with any JQL query
+- **🎨 Beautiful Output**: Terminal display with ticket labels and organized formatting
+- **📝 Persistent Logging**: Automatic logging of new tickets to file
+- **🍎 macOS Integration**: Native notifications that respect Do Not Disturb settings
+
 ---
 
 **Star ⭐ this repo if it helps you stay on top of your tickets!**

@@ -188,6 +188,10 @@ func (m *JiraMonitor) checkAndNotify() {
 	currentIssues, err := m.getTodoIssues()
 	if err != nil {
 		log.Printf("❌ Error checking Jira: %v", err)
+		fmt.Printf("⚠️  Will retry on next check cycle in %d minutes\n", m.config.CheckInterval)
+
+		// Don't return - continue with the monitoring loop
+		// Just skip this check cycle and try again later
 		return
 	}
 
@@ -257,43 +261,62 @@ func (m *JiraMonitor) compareIssues(oldIssues, newIssues []JiraIssue) (added, re
 }
 
 func (m *JiraMonitor) getTodoIssues() ([]JiraIssue, error) {
-	// Use the JQL query from configuration
-	jql := m.config.JQL
+	// Use the new JQL search endpoint as required by Jira
+	url := fmt.Sprintf("%s/rest/api/3/search/jql", m.config.JiraBaseURL)
 
-	// Properly URL encode the JQL
-	encodedJQL := strings.ReplaceAll(jql, " ", "%20")
-	encodedJQL = strings.ReplaceAll(encodedJQL, "\"", "%22")
-	encodedJQL = strings.ReplaceAll(encodedJQL, "=", "%3D")
-	encodedJQL = strings.ReplaceAll(encodedJQL, "(", "%28")
-	encodedJQL = strings.ReplaceAll(encodedJQL, ")", "%29")
+	// Create request payload for the new API
+	requestBody := map[string]interface{}{
+		"jql":        m.config.JQL,
+		"maxResults": 1000,
+		"fields":     []string{"status", "summary", "labels"},
+	}
 
-	url := fmt.Sprintf("%s/rest/api/3/search?jql=%s&maxResults=1000&fields=status,summary,labels",
-		m.config.JiraBaseURL, encodedJQL)
+	jsonBody, err := json.Marshal(requestBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request body: %v", err)
+	}
 
-	fmt.Printf("🔍 Using JQL: %s\n", jql)
+	fmt.Printf("🔍 Using JQL: %s\n", m.config.JQL)
 
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("POST", url, strings.NewReader(string(jsonBody)))
 	if err != nil {
 		return nil, err
 	}
 
 	req.SetBasicAuth(m.config.Email, m.config.APIToken)
 	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := m.client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to make API request: %v", err)
 	}
 	defer resp.Body.Close()
 
+	body, _ := io.ReadAll(resp.Body)
+
 	if resp.StatusCode != 200 {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("jira API error: %d - %s", resp.StatusCode, string(body))
+		switch resp.StatusCode {
+		case 400:
+			return nil, fmt.Errorf("bad request (400) - invalid JQL or parameters: %s", string(body))
+		case 401:
+			return nil, fmt.Errorf("authentication failed (401) - check your email and API token: %s", string(body))
+		case 403:
+			return nil, fmt.Errorf("access forbidden (403) - insufficient permissions: %s", string(body))
+		case 404:
+			return nil, fmt.Errorf("not found (404) - check your Jira URL and project: %s", string(body))
+		case 410:
+			return nil, fmt.Errorf("API deprecated (410) - this should be fixed now with new endpoint: %s", string(body))
+		case 429:
+			return nil, fmt.Errorf("rate limited (429) - too many requests, increase check interval: %s", string(body))
+		default:
+			return nil, fmt.Errorf("jira API error: %d - %s", resp.StatusCode, string(body))
+		}
 	}
 
 	var searchResp JiraSearchResponse
-	if err := json.NewDecoder(resp.Body).Decode(&searchResp); err != nil {
-		return nil, err
+	if err := json.Unmarshal(body, &searchResp); err != nil {
+		return nil, fmt.Errorf("failed to parse API response: %v", err)
 	}
 
 	return searchResp.Issues, nil
