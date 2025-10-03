@@ -96,12 +96,7 @@ func loadConfig() (Config, error) {
 
 	// Load environment variables from .env file
 	if err := loadEnvFile(".env"); err != nil {
-		fmt.Println("⚠️  No .env file found. Creating one...")
-		if err := createEnvFile(); err != nil {
-			return config, fmt.Errorf("failed to create .env file: %v", err)
-		}
-		fmt.Println("✅ Created .env file. Please fill it with your credentials and run again.")
-		os.Exit(0)
+		return config, fmt.Errorf("❌ No .env file found. Please copy .env.example to .env and fill in your credentials:\n   cp .env.example .env\n   Then edit .env with your Jira details")
 	}
 
 	// Load from environment variables
@@ -151,35 +146,6 @@ func loadEnvFile(filename string) error {
 	}
 
 	return scanner.Err()
-}
-
-func createEnvFile() error {
-	envContent := `# Jira Configuration
-# Fill in your details below and save the file
-
-# Your Jira instance URL (e.g., https://your-company.atlassian.net)
-JIRA_BASE_URL=https://c24-hotel.atlassian.net
-
-# Your Jira email address
-JIRA_EMAIL=your-email@example.com
-
-# Your Jira API token (get from: https://id.atlassian.com/manage-profile/security/api-tokens)
-JIRA_API_TOKEN=your-api-token-here
-
-# Your project key (optional - only needed if not using custom JQL)
-JIRA_PROJECT_KEY=HOAPI
-
-# Your board ID (optional - extracted from URL if not specified)
-JIRA_BOARD_ID=14
-
-# Custom JQL query for filtering tickets
-JIRA_JQL=project = "Hotel - API" AND assignee is EMPTY AND status = "To Do" AND (labels is EMPTY OR labels not IN (HO-Provider))
-
-# Check interval in minutes (default: 5)
-CHECK_INTERVAL_MINUTES=5
-`
-
-	return os.WriteFile(".env", []byte(envContent), 0644)
 }
 
 func (m *JiraMonitor) checkAndNotify() {

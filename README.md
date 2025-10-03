@@ -22,14 +22,9 @@ A lightweight Go application that silently monitors your Jira tickets and instan
 git clone https://github.com/vahiiiid/jira-new-ticket-notifier.git
 cd jira-new-ticket-notifier
 
-# 2. Create your config (will prompt for setup)
-cat > .env << 'EOF'
-JIRA_BASE_URL=https://your-company.atlassian.net
-JIRA_EMAIL=your-email@company.com
-JIRA_API_TOKEN=your-api-token-here
-JIRA_JQL=project = "YOUR-PROJECT" AND assignee is EMPTY AND status = "To Do"
-CHECK_INTERVAL_MINUTES=5
-EOF
+# 2. Setup your configuration
+cp .env.example .env
+# Edit .env with your actual Jira credentials
 
 # 3. Run and enjoy!
 go run main.go
@@ -87,7 +82,13 @@ Found 2 new tickets
 
 ### 2. Configure Your Environment
 
-Create a `.env` file with your settings:
+Copy the example configuration file and customize it with your settings:
+
+```bash
+cp .env.example .env
+```
+
+Then edit the `.env` file with your settings:
 
 ```bash
 # Your Jira instance
@@ -254,7 +255,9 @@ We'd love your help making this tool even better!
 git clone https://github.com/vahiiiid/jira-new-ticket-notifier.git
 cd jira-new-ticket-notifier
 go mod tidy
-# Create your .env file with the template above
+# Copy and configure your environment file
+cp .env.example .env
+# Edit .env with your actual Jira credentials
 go run main.go
 ```
 
